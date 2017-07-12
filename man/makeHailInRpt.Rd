@@ -35,6 +35,9 @@ This function generates an excel file where the first sheet
 lists all the groundfish hailins for the current and next day, and the
 subsequent sheets include breakdowns of the catch.
 }
+\seealso{
+Other portsampling: \code{\link{update.portsampling}}
+}
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
 }

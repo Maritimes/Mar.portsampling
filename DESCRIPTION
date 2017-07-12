@@ -9,7 +9,8 @@ Description: The loss of the Virtual Data Centre makes life difficult for some
     with an alternative means to get the same information.
 Imports:
     RODBC,
-    xlsx
+    xlsx,
+    devtools
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
