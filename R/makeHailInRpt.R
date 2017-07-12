@@ -1,0 +1,302 @@
+#' @title makeHailInRpt
+#' @description This function generates an excel file where the first sheet
+#' lists all the groundfish hailins for the current and next day, and the
+#' subsequent sheets include breakdowns of the catch.
+#' @param thePath default is \code{C:\\DFO-MPO\\PORTSAMPLING}.  This is where you
+#' would like your reports saved
+#' @param fn.oracle.username default is \code{'_none_'} This is your username for
+#' accessing oracle objects. If you have a value for this stored in your
+#' environment (e.g. from an rprofile file), this can be left and that value will
+#' be used.  If a value for this is provided, it will take priority over your
+#' existing value.
+#' @param fn.oracle.password default is \code{'_none_'} This is your password for
+#' accessing oracle objects. If you have a value for this stored in your
+#' environment (e.g. from an rprofile file), this can be left and that value will
+#' be used.  If a value for this is provided, it will take priority over your
+#' existing value.
+#' @param fn.oracle.dsn default is \code{'_none_'} This is your dsn/ODBC
+#' identifier for accessing oracle objects. If you have a value for this stored in your
+#' environment (e.g. from an rprofile file), this can be left and that value will
+#' be used.  If a value for this is provided, it will take priority over your
+#' existing value.
+#' @importFrom RODBC sqlQuery
+#' @importFrom xlsx write.xlsx
+#' @family portsampling
+#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
+#' @export
+makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
+                      fn.oracle.username = "_none_",
+                      fn.oracle.password = "_none_",
+                      fn.oracle.dsn = "_none_") {
+  is.date <- function(x) inherits(x, 'POSIXct')
+  fn = "PortSamplers"
+  ts = format(Sys.time(), "%Y%m%d_%H%M")
+  filename <- paste0(fn, "_", ts, ".xlsx")
+  channel = make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
+  ts = format(Sys.time(), "%Y%m%d_%H%M")
+  SQL1 = paste0(
+    "SELECT PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
+  VESSELS.VESSEL_NAME,
+    PFISP_HAIL_IN_CALLS.VR_NUMBER,
+    PFISP_HAIL_OUT_LIC_DOCS.LICENCE_ID,
+    COMMUNITIES.COMMUNITY_NAME
+    || ' ('
+    || WHARVES.WHARF_NAME
+    || ')' PORT_WHARF,
+    HAIL_IN_TYPES.DESC_ENG OFFLOAD,
+    (
+    CASE
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG      = 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG = 'Y'
+    THEN 'Offshore Observer, Monitored Landing'
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG       = 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG != 'Y'
+    THEN 'Offshore Observer'
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG     != 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG = 'Y'
+    THEN 'Monitored Landing'
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG      != 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG != 'Y'
+    THEN ''
+    ELSE 'WEIRD'
+    END) MONITOR,
+    SUM(ROUND((
+    CASE PFISP_HAIL_IN_ONBOARD.UNIT_OF_MEASURE_ID
+    WHEN 10
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2.20462
+    WHEN 20
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    WHEN 30
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2204.62
+    WHEN 40
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2000
+    ELSE PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    END), 1)) TOT_EST_ONBOARD_WEIGHT_LBS,
+    SPECIES1.DESC_ENG MAJ_SP,
+    ROUND((MAJ_SP.EST_ONBOARD_WEIGHT_LBS/SUM(ROUND((
+    CASE PFISP_HAIL_IN_ONBOARD.UNIT_OF_MEASURE_ID
+    WHEN 10
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2.20462
+    WHEN 20
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    WHEN 30
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2204.62
+    WHEN 40
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2000
+    ELSE PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    END), 1)))*100,0) ||'%' MAJ_SP_PERCENT,
+    MAJ_SP.EST_ONBOARD_WEIGHT_LBS MAJ_SP_WGT_LBS,
+    NAFO_UNIT_AREAS.AREA MAJ_SP_NAFO,
+    DMP_COMPANIES.NAME DMP_NAME,
+    DOCKSIDE_OBSERVERS.FIRSTNAME
+    || ' '
+    || DOCKSIDE_OBSERVERS.SURNAME DS_OBS,
+
+    PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME
+    || '('
+    || PFISP_HAIL_IN_CALLS.CONF_ISSUED_USER_ID
+    || ')' ISSUE_TIME,
+    PFISP_HAIL_IN_CALLS.CONF_NUMBER,
+    PFISP_HAIL_OUTS.CONF_NUMBER AS MATCHING_HAIL_OUT,
+    PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID
+    FROM
+    MARFISSCI.PFISP_HAIL_IN_LANDINGS,
+    MARFISSCI.PFISP_HAIL_IN_CALLS,
+    MARFISSCI.WHARVES,
+    MARFISSCI.COMMUNITIES,
+    MARFISSCI.HAIL_IN_TYPES,
+    MARFISSCI.DMP_COMPANIES,
+    MARFISSCI.PFISP_HAIL_IN_ONBOARD,
+    MARFISSCI.PFISP_HAIL_OUTS,
+    MARFISSCI.VESSELS,
+    MARFISSCI.SPECIES,
+    MARFISSCI.PFISP_HAIL_OUT_LIC_DOCS,
+    MARFISSCI.LICENCES,
+    MARFISSCI.PFISP_HAIL_IN_LAND_OBSRVRS,
+    MARFISSCI.DOCKSIDE_OBSERVERS,
+    (SELECT HAIL_IN_LANDING_ID,
+    SSF_SPECIES_CODE,
+    EST_ONBOARD_WEIGHT_LBS,
+    NAFO_UNIT_AREA_ID
+    FROM
+    (SELECT PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID,
+    PFISP_HAIL_IN_ONBOARD.SSF_SPECIES_CODE,
+    (
+    CASE PFISP_HAIL_IN_ONBOARD.UNIT_OF_MEASURE_ID
+    WHEN 10
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2.20462
+    WHEN 20
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    WHEN 30
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2204.62
+    WHEN 40
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2000
+    ELSE PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    END) EST_ONBOARD_WEIGHT_LBS,
+    PFISP_HAIL_IN_ONBOARD.NAFO_UNIT_AREA_ID,
+    rank() Over (Partition BY PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID Order By (
+    CASE PFISP_HAIL_IN_ONBOARD.UNIT_OF_MEASURE_ID
+    WHEN 10
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2.20462
+    WHEN 20
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    WHEN 30
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2204.62
+    WHEN 40
+    THEN PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2000
+    ELSE PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
+    END) DESC) RANCOR
+    FROM MARFISSCI.PFISP_HAIL_IN_ONBOARD
+    )
+    WHERE RANCOR = 1
+    ) MAJ_SP,
+    MARFISSCI.SPECIES SPECIES1,
+    MARFISSCI.NAFO_UNIT_AREAS
+    WHERE PFISP_HAIL_IN_CALLS.HAIL_IN_CALL_ID           = PFISP_HAIL_IN_LANDINGS.HAIL_IN_CALL_ID(+)
+    AND PFISP_HAIL_IN_LANDINGS.WHARF_ID                 = WHARVES.WHARF_ID(+)
+    AND WHARVES.COMMUNITY_CODE                          = COMMUNITIES.COMMUNITY_CODE(+)
+    AND PFISP_HAIL_IN_CALLS.HAIL_IN_TYPE_ID             = HAIL_IN_TYPES.HAIL_IN_TYPE_ID(+)
+    AND PFISP_HAIL_IN_LANDINGS.TRIP_DMP_COMPANY_ID      = DMP_COMPANIES.DMP_COMPANY_ID(+)
+    AND PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID       = PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID(+)
+    AND PFISP_HAIL_IN_CALLS.HAIL_OUT_ID                 = PFISP_HAIL_OUTS.HAIL_OUT_ID(+)
+    AND PFISP_HAIL_IN_CALLS.VR_NUMBER                   = VESSELS.VR_NUMBER(+)
+    AND PFISP_HAIL_OUTS.HAIL_OUT_ID                     = PFISP_HAIL_OUT_LIC_DOCS.HAIL_OUT_ID(+)
+    AND PFISP_HAIL_OUT_LIC_DOCS.LICENCE_ID              = LICENCES.LICENCE_ID(+)
+    AND LICENCES.SPECIES_CODE                           = SPECIES.SPECIES_CODE(+)
+    AND PFISP_HAIL_IN_CALLS.TRIP_DMP_COMPANY_ID         = PFISP_HAIL_IN_LANDINGS.TRIP_DMP_COMPANY_ID(+)
+    AND PFISP_HAIL_IN_LAND_OBSRVRS.DOCKSIDE_OBSERVER_ID = DOCKSIDE_OBSERVERS.DOCKSIDE_OBSERVER_ID(+)
+    AND PFISP_HAIL_IN_LAND_OBSRVRS.TRIP_DMP_COMPANY_ID  = DOCKSIDE_OBSERVERS.DMP_COMPANY_ID(+)
+    AND PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID       = PFISP_HAIL_IN_LAND_OBSRVRS.HAIL_IN_LANDING_ID(+)
+    AND PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID       = MAJ_SP.HAIL_IN_LANDING_ID(+)
+    AND MAJ_SP.SSF_SPECIES_CODE                         = SPECIES1.SPECIES_CODE(+)
+    AND MAJ_SP.NAFO_UNIT_AREA_ID                        = NAFO_UNIT_AREAS.AREA_ID(+)
+    --AND PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME BETWEEN to_date('2017-07-05 20:00', 'YYYY-MM-DD HH24:MI') AND to_date('2017-07-06 11:00', 'YYYY-MM-DD HH24:MI')
+    AND PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME BETWEEN trunc(sysdate-1) AND trunc(sysdate+2)
+    AND SPECIES.SPECIES_CATEGORY_ID = 1
+    GROUP BY PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
+    PFISP_HAIL_OUT_LIC_DOCS.LICENCE_ID,
+    (
+    CASE
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG      = 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG = 'Y'
+    THEN 'Offshore Observer, Monitored Landing'
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG       = 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG != 'Y'
+    THEN 'Offshore Observer'
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG     != 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG = 'Y'
+    THEN 'Monitored Landing'
+    WHEN PFISP_HAIL_IN_CALLS.OBSERVER_FLAG      != 'Y'
+    AND PFISP_HAIL_IN_LANDINGS.MONITOR_REQ_FLAG != 'Y'
+    THEN ''
+    ELSE 'WEIRD'
+    END),
+    DMP_COMPANIES.NAME,
+    COMMUNITIES.COMMUNITY_NAME
+    || ' ('
+    || WHARVES.WHARF_NAME
+    || ')',
+    HAIL_IN_TYPES.DESC_ENG,
+    MAJ_SP.EST_ONBOARD_WEIGHT_LBS,
+    PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME
+    || '('
+    || PFISP_HAIL_IN_CALLS.CONF_ISSUED_USER_ID
+    || ')',
+    PFISP_HAIL_IN_CALLS.CONF_NUMBER,
+    PFISP_HAIL_OUTS.CONF_NUMBER,
+    PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID,
+    '---',
+    PFISP_HAIL_IN_CALLS.CDATE
+    || '('
+    || PFISP_HAIL_IN_CALLS.CUSER
+    || ')',
+    TO_CHAR(TRUNC((NVL(PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME, PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME) - PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME) * 24), '00')
+    || ':'
+    || TRIM(TO_CHAR(ROUND((mod((NVL(PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME, PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME) - PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME) * 24, 1) * 60), 0), '00')),
+    PFISP_HAIL_IN_LANDINGS.HAIL_IN_CALL_ID,
+    PFISP_HAIL_IN_CALLS.HAIL_OUT_ID,
+    PFISP_HAIL_IN_CALLS.TRIP_ID,
+    PFISP_HAIL_IN_LANDINGS.EST_OFFLOAD_DATE_TIME,
+    PFISP_HAIL_IN_LANDINGS.TRIP_DMP_COMPANY_ID,
+    PFISP_HAIL_IN_CALLS.VR_NUMBER,
+    VESSELS.VESSEL_NAME,
+    SPECIES.SPECIES_CATEGORY_ID,
+    LICENCES.LICENCE_ID,
+    MAJ_SP.HAIL_IN_LANDING_ID,
+    DOCKSIDE_OBSERVERS.FIRSTNAME,
+    DOCKSIDE_OBSERVERS.SURNAME,
+    SPECIES1.DESC_ENG,
+    NAFO_UNIT_AREAS.AREA
+    ORDER BY PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME DESC,
+    PFISP_HAIL_IN_CALLS.VR_NUMBER;"
+  )
+  SQLDET = paste0(
+    "SELECT PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID,
+    SPECIES.DESC_ENG,
+    PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT,
+    UNIT_OF_MEASURES.DESC_ENG UNITS,
+    PFISP_HAIL_IN_ONBOARD.SSF_LANDED_FORM_CODE FORM_CODE,
+    NAFO_UNIT_AREAS.AREA NAFO_AREA,
+    NAFO_UNIT_AREAS.DESC_ENG FISHING_AREA,
+    PFISP_HAIL_IN_CALLS.VR_NUMBER
+    FROM MARFISSCI.PFISP_HAIL_IN_ONBOARD
+    LEFT JOIN MARFISSCI.SPECIES
+    ON SPECIES.SPECIES_CODE = PFISP_HAIL_IN_ONBOARD.SSF_SPECIES_CODE
+    LEFT JOIN MARFISSCI.UNIT_OF_MEASURES
+    ON UNIT_OF_MEASURES.UNIT_OF_MEASURE_ID = PFISP_HAIL_IN_ONBOARD.UNIT_OF_MEASURE_ID
+    LEFT JOIN MARFISSCI.NAFO_UNIT_AREAS
+    ON PFISP_HAIL_IN_ONBOARD.NAFO_UNIT_AREA_ID = NAFO_UNIT_AREAS.AREA_ID
+    RIGHT JOIN MARFISSCI.PFISP_HAIL_IN_LANDINGS
+    ON PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID = PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID
+    RIGHT JOIN MARFISSCI.PFISP_HAIL_IN_CALLS
+    ON PFISP_HAIL_IN_LANDINGS.HAIL_IN_CALL_ID      = PFISP_HAIL_IN_CALLS.HAIL_IN_CALL_ID
+    WHERE PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID = &HILID&
+    ORDER BY SPECIES.DESC_ENG;"
+  )
+  if (channel[[1]] == 'rodbc')
+
+  data = sqlQuery(channel[[2]], SQL1)
+  data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0
+  data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
+
+  if (nrow(data) == 0) stop("No data returned")
+  thePath =  path.expand(thePath)
+  dir.create(thePath, showWarnings = FALSE)
+  write.xlsx(
+    data,
+    file = file.path(thePath,filename),
+    sheetName = "MASTER",
+    row.names = FALSE,
+    append = FALSE
+  )
+  data$tmpID <- seq.int(nrow(data))
+  HILID = data[data$TOT_EST_ONBOARD_WEIGHT_LBS > 0, c("tmpID", "VESSEL_NAME", "EST_LANDING_DATE_TIME","HAIL_IN_LANDING_ID")]
+  HILID$tmpEST_LANDING_DATE_TIME = gsub(':|-','',HILID$EST_LANDING_DATE_TIME)
+  HILID$tmpEST_LANDING_DATE_TIME = substr(gsub(' ','_',HILID$tmpEST_LANDING_DATE_TIME),7,13)
+  HILID = HILID[with(HILID, order(HILID$VESSEL_NAME,HILID$tmpEST_LANDING_DATE_TIME)),]
+  HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
+  HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
+  #vessels that show up more than once should be identified
+  HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
+  HILID = HILID[with(HILID, order(HILID$tmpID)),]
+  HILID$tmpID <- NULL
+  HILID$tmpEST_LANDING_DATE_TIME <- NULL
+  HILID$tmpCNT <- NULL
+  #write data to sheet
+
+  for (x in 1:nrow(HILID)) {
+    thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
+    datadet = sqlQuery(channel[[2]], thisSQLDET)
+    write.xlsx(
+      datadet,
+      file = filename,
+      sheetName = as.character(HILID$tmpVESS_INFO[x]),
+      row.names = FALSE,
+      append = TRUE
+    )
+    #cat(paste0("\nDid ", HILID$tmpVESS_INFO[x]))
+    #write datadet to new sheet
+  }
+
+cat(paste0("File written to ",file.path(thePath,filename)))
+}
