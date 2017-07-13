@@ -289,7 +289,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     datadet = sqlQuery(channel[[2]], thisSQLDET)
     write.xlsx(
       datadet,
-      file = filename,
+      file = file.path(thePath,filename),
       sheetName = as.character(HILID$tmpVESS_INFO[x]),
       row.names = FALSE,
       append = TRUE
