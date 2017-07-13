@@ -2,6 +2,7 @@
 
 S3method(update,portsampling)
 export(makeHailInRpt)
+export(makePortSamplingBat)
 export(make_oracle_cxn)
 importFrom(RODBC,odbcConnect)
 importFrom(RODBC,sqlQuery)

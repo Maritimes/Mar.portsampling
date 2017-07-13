@@ -10,7 +10,8 @@
 This is just a quick and dirty script for facilitating updates
 }
 \seealso{
-Other portsampling: \code{\link{makeHailInRpt}}
+Other portsampling: \code{\link{makeHailInRpt}},
+  \code{\link{makePortSamplingBat}}
 }
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
