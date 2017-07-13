@@ -256,10 +256,15 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   if (channel[[1]] == 'rodbc')
 
   data = sqlQuery(channel[[2]], SQL1)
+
   data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0
   data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
 
-  if (nrow(data) == 0) stop("No data returned")
+  if (nrow(data) == 0) {
+    stop("No data returned")
+  }else{
+    cat("Received data")
+  }
   thePath =  path.expand(thePath)
   dir.create(thePath, showWarnings = FALSE)
   write.xlsx(
@@ -283,7 +288,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   HILID$tmpEST_LANDING_DATE_TIME <- NULL
   HILID$tmpCNT <- NULL
   #write data to sheet
-
+  cat("Getting details")
   for (x in 1:nrow(HILID)) {
     thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
     datadet = sqlQuery(channel[[2]], thisSQLDET)
@@ -294,9 +299,6 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
       row.names = FALSE,
       append = TRUE
     )
-    #cat(paste0("\nDid ", HILID$tmpVESS_INFO[x]))
-    #write datadet to new sheet
   }
-
 cat(paste0("File written to ",file.path(thePath,filename)))
 }

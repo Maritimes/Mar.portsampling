@@ -36,7 +36,7 @@ lists all the groundfish hailins for the current and next day, and the
 subsequent sheets include breakdowns of the catch.
 }
 \seealso{
-Other portsampling: \code{\link{makePortSamplingBat}},
+Other portsampling: \code{\link{makePushButton}},
   \code{\link{update.portsampling}}
 }
 \author{

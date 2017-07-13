@@ -11,7 +11,7 @@ This is just a quick and dirty script for facilitating updates
 }
 \seealso{
 Other portsampling: \code{\link{makeHailInRpt}},
-  \code{\link{makePortSamplingBat}}
+  \code{\link{makePushButton}}
 }
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
