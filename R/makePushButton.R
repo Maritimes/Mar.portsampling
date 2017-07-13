@@ -18,6 +18,8 @@ makePushButton<-function(){
   filename = "runPortSamplingRpt.bat"
   batFile = file(file.path(thePath,filename))
   RSLoc = file.path(R.home("bin"),"Rscript.exe")
+
+  dir.create(file.path("C:","DFO-MPO","PORTSAMPLING"), showWarnings = FALSE)
   runScript = file.path("C:","DFO-MPO","PORTSAMPLING","batchRun.R")
   RSLoc = file.path(R.home("bin"),"Rscript.exe")
 
