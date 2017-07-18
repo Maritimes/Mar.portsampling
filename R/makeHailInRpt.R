@@ -263,7 +263,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   if (nrow(data) == 0) {
     stop("No data returned")
   }else{
-    cat("Received data")
+    cat("\nReceived data")
   }
   thePath =  path.expand(thePath)
   dir.create(thePath, showWarnings = FALSE)
@@ -282,13 +282,15 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
   HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
   #vessels that show up more than once should be identified
-  HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
+  if (max(HILID$tmpCNT)>1){
+    HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
+  }
   HILID = HILID[with(HILID, order(HILID$tmpID)),]
   HILID$tmpID <- NULL
   HILID$tmpEST_LANDING_DATE_TIME <- NULL
   HILID$tmpCNT <- NULL
   #write data to sheet
-  cat("Getting details")
+  cat("\nGetting details")
   for (x in 1:nrow(HILID)) {
     thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
     datadet = sqlQuery(channel[[2]], thisSQLDET)
@@ -300,5 +302,5 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
       append = TRUE
     )
   }
-cat(paste0("File written to ",file.path(thePath,filename)))
+cat(paste0("\nFile written to ",file.path(thePath,filename)))
 }
