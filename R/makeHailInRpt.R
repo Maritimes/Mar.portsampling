@@ -302,5 +302,5 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
       append = TRUE
     )
   }
-cat(paste0("\nFile written to ",file.path(thePath,filename)))
+cat(paste0("\nFile written to ",file.path(thePath,filename),"\n\n"))
 }
