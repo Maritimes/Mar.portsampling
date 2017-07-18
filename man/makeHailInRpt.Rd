@@ -37,7 +37,7 @@ subsequent sheets include breakdowns of the catch.
 }
 \seealso{
 Other portsampling: \code{\link{makePushButton}},
-  \code{\link{update.portsampling}}
+  \code{\link{updatePortsampling}}
 }
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}

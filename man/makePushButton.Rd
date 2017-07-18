@@ -12,7 +12,7 @@ desktop that can be double-clicked to run reports easily
 }
 \seealso{
 Other portsampling: \code{\link{makeHailInRpt}},
-  \code{\link{update.portsampling}}
+  \code{\link{updatePortsampling}}
 }
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
