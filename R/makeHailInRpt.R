@@ -235,7 +235,6 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
   HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
   #vessels that show up more than once should be identified
-  browser()
   if (max(HILID$tmpCNT)>1){
     HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
   }
