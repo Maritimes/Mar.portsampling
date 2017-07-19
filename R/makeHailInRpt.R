@@ -235,6 +235,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
   HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
   #vessels that show up more than once should be identified
+  browser()
   if (max(HILID$tmpCNT)>1){
     HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
   }
@@ -247,6 +248,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   for (x in 1:nrow(HILID)) {
     thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
     datadet = sqlQuery(channel[[2]], thisSQLDET)
+    if (nrow(datadet)>0){
     write.xlsx(
       datadet,
       file = file.path(thePath,filename),
@@ -254,6 +256,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
       row.names = FALSE,
       append = TRUE
     )
+    }
   }
 cat(paste0("\nFile written to ",file.path(thePath,filename),"\n\n"))
 }
