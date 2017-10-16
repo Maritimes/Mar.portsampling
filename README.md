@@ -1,4 +1,4 @@
-# bio.portsampling
+# portsampling
 A suite of tools for Port Samplers
 
 ## Installation
@@ -7,7 +7,7 @@ To make the "pushButton" reports, run the following code.  This will generate a 
 
 ```R
 require(devtools)
-install_github('Maritimes/bio.portsampling')
-require(bio.portsampling)
+install_github('Maritimes/portsampling')
+require(portsampling)
 makePushButton()
 ```
