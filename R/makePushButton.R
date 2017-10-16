@@ -37,7 +37,7 @@ makePushButton<-function(){
 REM Double-clicking this file will run your reports automatically
 REM
 REM You can generate a file like this automatically via
-REM bio.portsampling::makePortSamplingBat()
+REM portsampling::makePortSamplingBat()
 REM"
   scriptPath = paste0('"',RSLoc,'" "',runScript,'" ', oracle.username, ' ', oracle.password, ' ', oracle.dsn)
   writeLines(c(head, scriptPath,'PAUSE'), batFile)
@@ -47,7 +47,7 @@ REM"
   runFile = file(file.path("C:","DFO-MPO","PORTSAMPLING",filename2))
 
 runner = "batchRun<-function(args){
-    bio.portsampling::makeHailInRpt(thePath = 'C:/DFO-MPO/PORTSAMPLING',
+    portsampling::makeHailInRpt(thePath = 'C:/DFO-MPO/PORTSAMPLING',
                   fn.oracle.username = args[1],
                   fn.oracle.password = args[2],
                   fn.oracle.dsn = args[3])
