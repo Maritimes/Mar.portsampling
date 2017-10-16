@@ -1,4 +1,4 @@
-Package: bio.portsampling
+Package: portsampling
 Type: Package
 Title: A suite of tools for Port Samplers
 Version: 2017.07.19
