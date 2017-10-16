@@ -6,6 +6,7 @@
 #' @importFrom utils remove.packages
 #' @export
 updatePortsampling <- function(){
-  remove.packages(pkgs = "bio.portsampling")
+  if (require(bio.portsampling)) remove.packages(pkgs = "bio.portsampling")
+  if (require(portsampling)) remove.packages(pkgs = "portsampling")
   install_github('Maritimes/portsampling')
 }
