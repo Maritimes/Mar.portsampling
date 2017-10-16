@@ -7,5 +7,5 @@
 #' @export
 updatePortsampling <- function(){
   remove.packages(pkgs = "bio.portsampling")
-  install_github('Maritimes/bio.portsampling')
+  install_github('Maritimes/portsampling')
 }
