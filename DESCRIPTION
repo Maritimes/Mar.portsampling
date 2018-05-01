@@ -1,7 +1,7 @@
-Package: portsampling
+Package: Mar.portsampling
 Type: Package
 Title: A suite of tools for Port Samplers
-Version: 2018.05.01a
+Version: 2018.05.01
 Author: c( person("Mike", "McMahon", email="Mike.McMahon@dfo-mpo.gc.ca", role=c("aut", "cre")) )
 Maintainer: Mike McMahon <Mike.McMahon@dfo-mpo.gc.ca>
 Description: The loss of the Virtual Data Centre makes life difficult for some 
@@ -10,7 +10,10 @@ Description: The loss of the Virtual Data Centre makes life difficult for some
 Imports:
     RODBC,
     xlsx,
-    devtools
+    devtools,
+    Mar.utils
+Remotes:
+  Maritimes/Mar.utils
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

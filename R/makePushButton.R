@@ -1,7 +1,7 @@
 #' @title makePushButton
 #' @description This function facilitates the generation of a batch file to your
 #' desktop that can be double-clicked to run reports easily
-#' @family portsampling
+#' @family Mar.portsampling
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom RODBC odbcConnect
 #' @export
@@ -47,7 +47,7 @@ REM"
   runFile = file(file.path("C:","DFO-MPO","PORTSAMPLING",filename2))
 
 runner = "batchRun<-function(args){
-    portsampling::makeHailInRpt(thePath = 'C:/DFO-MPO/PORTSAMPLING',
+    Mar.portsampling::makeHailInRpt(thePath = 'C:/DFO-MPO/PORTSAMPLING',
                   fn.oracle.username = args[1],
                   fn.oracle.password = args[2],
                   fn.oracle.dsn = args[3])

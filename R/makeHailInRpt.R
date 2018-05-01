@@ -21,7 +21,7 @@
 #' existing value.
 #' @importFrom RODBC sqlQuery
 #' @importFrom xlsx write.xlsx
-#' @family portsampling
+#' @family Mar.portsampling
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @export
 makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
@@ -32,7 +32,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
-  channel = make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
+  channel = Mar.utils::make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   SQL1 = paste0(
     "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
@@ -63,7 +63,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     MARFISSCI.DMP_COMPANIES.NAME DMP_NAME,
     MARFISSCI.DOCKSIDE_OBSERVERS.FIRSTNAME
     || ' '
-    || MARFISSCI.DOCKSIDE_OBSERVERS.SURNAME DS_OBS,                      
+    || MARFISSCI.DOCKSIDE_OBSERVERS.SURNAME DS_OBS,  
     MARFISSCI.PFISP_HAIL_IN_CALLS.OBSERVER_FLAG,
     MARFISSCI.PFISP_HAIL_IN_CALLS.CONF_NUMBER,
     MARFISSCI.PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID
@@ -164,7 +164,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     MARFISSCI.HAIL_IN_TYPES.DESC_ENG,
     ALLSPEC.SPECIES,
     MARFISSCI.DMP_COMPANIES.NAME,
-    MARFISSCI.PFISP_HAIL_IN_CALLS.CONF_NUMBER,                         
+    MARFISSCI.PFISP_HAIL_IN_CALLS.CONF_NUMBER,  
     MARFISSCI.PFISP_HAIL_IN_CALLS.OBSERVER_FLAG,
     MARFISSCI.PFISP_HAIL_IN_CALLS.CONF_ISSUED_DATE_TIME
     || '('
@@ -192,7 +192,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     UNIT_OF_MEASURES.DESC_ENG UNITS,
     PFISP_HAIL_IN_ONBOARD.SSF_LANDED_FORM_CODE FORM_CODE,
     NAFO_UNIT_AREAS.AREA NAFO_AREA,
-    PFISP_HAIL_IN_CALLS.VR_NUMBER,    
+    PFISP_HAIL_IN_CALLS.VR_NUMBER,
     PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID
     FROM MARFISSCI.PFISP_HAIL_IN_ONBOARD
     LEFT JOIN MARFISSCI.SPECIES
@@ -226,8 +226,8 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   if (nrow(data) == 0) {
     stop("No data returned")
   }else{
-    cat("\nReceived data") 
-    data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0  
+    cat("\nReceived data")
+    data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0 
     data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
   }
   thePath =  path.expand(thePath)

@@ -10,7 +10,7 @@ updatePortsampling()
 This is just a quick and dirty script for facilitating updates
 }
 \seealso{
-Other portsampling: \code{\link{makeHailInRpt}},
+Other Mar.portsampling: \code{\link{makeHailInRpt}},
   \code{\link{makePushButton}}
 }
 \author{

@@ -2,7 +2,6 @@
 
 export(makeHailInRpt)
 export(makePushButton)
-export(make_oracle_cxn)
 export(updatePortsampling)
 importFrom(RODBC,odbcConnect)
 importFrom(RODBC,sqlQuery)
