@@ -223,14 +223,13 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   if (channel[[1]] == 'rodbc')
 
   data = RODBC::sqlQuery(channel[[2]], SQL1)
-
-  data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0
-  data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
-
   if (nrow(data) == 0) {
     stop("No data returned")
   }else{
-    cat("\nReceived data")
+    cat("\nReceived data") 
+    browser()
+    data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0  
+    data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
   }
   thePath =  path.expand(thePath)
   dir.create(thePath, showWarnings = FALSE)
