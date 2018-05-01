@@ -32,7 +32,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
-  channel = Mar.utils::make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
+  channel = Mar.utils::make_oracle_cxn(usepkg = 'rodbc', fn.oracle.username = fn.oracle.username, fn.oracle.password = fn.oracle.password, fn.oracle.dsn = fn.oracle.dsn)
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   SQL1 = paste0(
     "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
