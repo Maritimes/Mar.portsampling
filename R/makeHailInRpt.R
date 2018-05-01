@@ -32,7 +32,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
-  channel = portsampling::make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
+  channel = make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   SQL1 = paste0(
     "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
@@ -222,18 +222,17 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   )
   if (channel[[1]] == 'rodbc')
 
-  data = RODBC::sqlQuery(channel[[2]], SQL1)
+  data = sqlQuery(channel[[2]], SQL1)
   if (nrow(data) == 0) {
     stop("No data returned")
   }else{
     cat("\nReceived data") 
-    browser()
     data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0  
     data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
   }
   thePath =  path.expand(thePath)
   dir.create(thePath, showWarnings = FALSE)
-  xlsx::write.xlsx(
+  write.xlsx(
     data,
     file = file.path(thePath,filename),
     sheetName = "MASTER",
@@ -259,9 +258,9 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   cat("\nGetting details")
   for (x in 1:nrow(HILID)) {
     thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
-    datadet = RODBC::sqlQuery(channel[[2]], thisSQLDET)
+    datadet = sqlQuery(channel[[2]], thisSQLDET)
     if (nrow(datadet)>0){
-    xlsx::write.xlsx(
+    write.xlsx(
       datadet,
       file = file.path(thePath,filename),
       sheetName = as.character(HILID$tmpVESS_INFO[x]),
