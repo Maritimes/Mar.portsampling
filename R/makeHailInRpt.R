@@ -32,7 +32,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
-  channel = make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
+  channel = portsampling::make_oracle_cxn(fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   SQL1 = paste0(
     "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
@@ -192,8 +192,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     UNIT_OF_MEASURES.DESC_ENG UNITS,
     PFISP_HAIL_IN_ONBOARD.SSF_LANDED_FORM_CODE FORM_CODE,
     NAFO_UNIT_AREAS.AREA NAFO_AREA,
-    PFISP_HAIL_IN_CALLS.VR_NUMBER,                        
-    PFISP_HAIL_IN_CALLS.OBSERVER_FLAG,
+    PFISP_HAIL_IN_CALLS.VR_NUMBER,    
     PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID
     FROM MARFISSCI.PFISP_HAIL_IN_ONBOARD
     LEFT JOIN MARFISSCI.SPECIES
@@ -223,7 +222,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   )
   if (channel[[1]] == 'rodbc')
 
-  data = sqlQuery(channel[[2]], SQL1)
+  data = RODBC::sqlQuery(channel[[2]], SQL1)
 
   data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0
   data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
@@ -235,7 +234,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   }
   thePath =  path.expand(thePath)
   dir.create(thePath, showWarnings = FALSE)
-  write.xlsx(
+  xlsx::write.xlsx(
     data,
     file = file.path(thePath,filename),
     sheetName = "MASTER",
@@ -261,9 +260,9 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   cat("\nGetting details")
   for (x in 1:nrow(HILID)) {
     thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
-    datadet = sqlQuery(channel[[2]], thisSQLDET)
+    datadet = RODBC::sqlQuery(channel[[2]], thisSQLDET)
     if (nrow(datadet)>0){
-    write.xlsx(
+    xlsx::write.xlsx(
       datadet,
       file = file.path(thePath,filename),
       sheetName = as.character(HILID$tmpVESS_INFO[x]),
