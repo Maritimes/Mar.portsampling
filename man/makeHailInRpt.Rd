@@ -4,9 +4,12 @@
 \alias{makeHailInRpt}
 \title{makeHailInRpt}
 \usage{
-makeHailInRpt(thePath = file.path("C:", "DFO-MPO", "PORTSAMPLING"),
-  fn.oracle.username = "_none_", fn.oracle.password = "_none_",
-  fn.oracle.dsn = "_none_")
+makeHailInRpt(
+  thePath = file.path("C:", "DFO-MPO", "PORTSAMPLING"),
+  fn.oracle.username = "_none_",
+  fn.oracle.password = "_none_",
+  fn.oracle.dsn = "_none_"
+)
 }
 \arguments{
 \item{thePath}{default is \code{C:\\DFO-MPO\\PORTSAMPLING}.  This is where you
@@ -36,9 +39,11 @@ lists all the groundfish hailins for the current and next day, and the
 subsequent sheets include breakdowns of the catch.
 }
 \seealso{
-Other Mar.portsampling: \code{\link{makePushButton}},
-  \code{\link{updatePortsampling}}
+Other Mar.portsampling: 
+\code{\link{makePushButton}()},
+\code{\link{updatePortsampling}()}
 }
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
 }
+\concept{Mar.portsampling}

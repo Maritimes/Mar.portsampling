@@ -11,9 +11,11 @@ This function facilitates the generation of a batch file to your
 desktop that can be double-clicked to run reports easily
 }
 \seealso{
-Other Mar.portsampling: \code{\link{makeHailInRpt}},
-  \code{\link{updatePortsampling}}
+Other Mar.portsampling: 
+\code{\link{makeHailInRpt}()},
+\code{\link{updatePortsampling}()}
 }
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
 }
+\concept{Mar.portsampling}
