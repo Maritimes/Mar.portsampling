@@ -37,7 +37,7 @@ makePushButton<-function(){
 REM Double-clicking this file will run your reports automatically
 REM
 REM You can generate a file like this automatically via
-REM portsampling::makePortSamplingBat()
+REM Mar.portsampling::makePortSamplingBat()
 REM"
   scriptPath = paste0('"',RSLoc,'" "',runScript,'" ', oracle.username, ' ', oracle.password, ' ', oracle.dsn)
   writeLines(c(head, scriptPath,'PAUSE'), batFile)

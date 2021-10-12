@@ -25,17 +25,21 @@
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @export
 makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
-                      fn.oracle.username = "_none_",
-                      fn.oracle.password = "_none_",
-                      fn.oracle.dsn = "_none_") {
+                          fn.oracle.username = "_none_",
+                          fn.oracle.password = "_none_",
+                          fn.oracle.dsn = "_none_") {
+  thePath =  path.expand(thePath)
   is.date <- function(x) inherits(x, 'POSIXct')
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
   channel = Mar.utils::make_oracle_cxn(usepkg = 'rodbc', fn.oracle.username = fn.oracle.username, fn.oracle.password = fn.oracle.password, fn.oracle.dsn = fn.oracle.dsn)
-  ts = format(Sys.time(), "%Y%m%d_%H%M")
-  SQL1 = paste0(
-    "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
+  if (channel$channel == -1) stop("Can't connect to Oracle")
+  res <- list()
+  
+  doRpt1 <- function(){
+    SQL1 = 
+      "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
   MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_OFFLOAD_DATE_TIME,
     MARFISSCI.COMMUNITIES.COMMUNITY_NAME
     || ' ('
@@ -184,9 +188,20 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     MARFISSCI.PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID
     ORDER BY MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME DESC,
     MARFISSCI.PFISP_HAIL_IN_CALLS.VR_NUMBER;"
-  )
-  SQLDET = paste0(
-    "SELECT
+    
+    data = RODBC::sqlQuery(channel$channel, SQL1)
+    if (nrow(data) == 0) stop("No data returned")
+    cat("\nReceived data")
+    data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0 
+    data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
+    
+    return(data)
+  }
+  
+  doRpt2 <- function(HILID = NULL){
+    # thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
+    SQLDET = paste0(
+      "SELECT
     SPECIES.DESC_ENG SPECIES,
     PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT,
     UNIT_OF_MEASURES.DESC_ENG UNITS,
@@ -205,7 +220,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     ON PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID = PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID
     RIGHT JOIN MARFISSCI.PFISP_HAIL_IN_CALLS
     ON PFISP_HAIL_IN_LANDINGS.HAIL_IN_CALL_ID      = PFISP_HAIL_IN_CALLS.HAIL_IN_CALL_ID
-    WHERE PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID = &HILID&
+    WHERE PFISP_HAIL_IN_ONBOARD.HAIL_IN_LANDING_ID = ",HILID,"
     ORDER BY
     (
     CASE MARFISSCI.PFISP_HAIL_IN_ONBOARD.UNIT_OF_MEASURE_ID
@@ -219,55 +234,117 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     THEN MARFISSCI.PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2000
     ELSE MARFISSCI.PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
     END) DESC;"
-  )
-  if (channel[[1]] == 'rodbc')
-
-  data = sqlQuery(channel[[2]], SQL1)
-  if (nrow(data) == 0) {
-    stop("No data returned")
-  }else{
-    cat("\nReceived data")
-    data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0 
-    data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
+    )
+    data = RODBC::sqlQuery(channel$channel, SQLDET)
+    return(data)
   }
-  thePath =  path.expand(thePath)
+  
+  doLargePelagics <- function(){
+    SQLTuna = "SELECT DISTINCT
+    S.DESC_ENG SPECIES,
+--    A.HAIL_IN_LANDING_ID,
+    A.EST_ONBOARD_WEIGHT,
+    A.OFFLOAD_WEIGHT,
+--A.SSF_SPECIES_CODE,
+--    A.SSF_LANDED_FORM_CODE,
+--    A.NAFO_UNIT_AREA_ID,
+    N.AREA NAFO,
+    A.VR_NUMBER,
+    V.VESSEL_NAME, 
+    A.SPC_TAG_ID,
+    --B.COMMUNITY_CODE,
+    --B.WHARF_ID,
+    C.COMMUNITY_NAME,
+    W.WHARF_NAME,
+  --  F.DESC_ENG formcode,
+    B.EST_OFFLOAD_DATE_TIME,
+    B.EST_LANDING_DATE_TIME
+FROM
+    MARFISSCI.HAIL_IN_ONBOARD    A,
+    MARFISSCI.HAIL_IN_LANDINGS   B,
+    MARFISSCI.COMMUNITIES C,
+    MARFISSCI.WHARVES W,
+    MARFISSCI.VESSELS V,
+    MARFISSCI.SPECIES S,
+  --  MARFISSCI.SPECIE_SIZE_FORMS F,
+    MARFISSCI.NAFO_UNIT_AREAS N
+WHERE
+    A.HAIL_IN_LANDING_ID = B.HAIL_IN_LANDING_ID
+    AND B.COMMUNITY_CODE = C.COMMUNITY_CODE
+    AND B.WHARF_ID = W.WHARF_ID
+    AND A.VR_NUMBER = V.VR_NUMBER
+    AND  A.SSF_SPECIES_CODE = S.SPECIES_CODE 
+    AND A.NAFO_UNIT_AREA_ID = N.AREA_ID
+   -- AND (A.SSF_LANDED_FORM_CODE = F.LANDED_FORM_CODE AND A.SSF_SPECIES_CODE = F.SPECIES_CODE)
+    AND (B.EST_LANDING_DATE_TIME >= sysdate-5 OR B.EST_OFFLOAD_DATE_TIME >= sysdate-5) 
+    --AND EXTRACT(YEAR FROM B.EST_LANDING_DATE_TIME) = 2021
+    AND SSF_SPECIES_CODE IN (
+   251, --swordfish
+   252, --albacore 
+   253, --bigeye
+   254, --bluefin
+   255, --skipjack
+   256, --yellowfin
+   257, --tuna,restricted
+   259  --tuna, unspecified
+    )
+    ORDER BY GREATEST(EST_OFFLOAD_DATE_TIME,EST_LANDING_DATE_TIME) DESC;"
+    data = RODBC::sqlQuery(channel$channel, SQLTuna)
+    return(data)
+  }
+  
+  makeHILID <- function(data = NULL){
+    data$tmpID <- seq.int(nrow(data))
+    HILID = data[data$TOT_EST_ONBOARD_WEIGHT_LBS > 0, c("tmpID", "VESSEL_NAME", "EST_LANDING_DATE_TIME","HAIL_IN_LANDING_ID")]
+    HILID$tmpEST_LANDING_DATE_TIME = gsub(':|-','',HILID$EST_LANDING_DATE_TIME)
+    HILID$tmpEST_LANDING_DATE_TIME = substr(gsub(' ','_',HILID$tmpEST_LANDING_DATE_TIME),7,13)
+    HILID = HILID[with(HILID, order(HILID$VESSEL_NAME,HILID$tmpEST_LANDING_DATE_TIME)),]
+    HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
+    HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
+    #vessels that show up more than once should be identified
+    if (max(HILID$tmpCNT)>1){
+      HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
+    }
+    HILID = HILID[with(HILID, order(HILID$tmpID)),]
+    HILID$tmpID <- NULL
+    HILID$tmpEST_LANDING_DATE_TIME <- NULL
+    HILID$tmpCNT <- NULL
+    return(HILID)
+  }
+  
+  data <- doRpt1()
+  lpelagics <- doLargePelagics()
+  HILID <- makeHILID(data=data)
+  
   dir.create(thePath, showWarnings = FALSE)
-  write.xlsx(
+  xlsx::write.xlsx(
     data,
     file = file.path(thePath,filename),
     sheetName = "MASTER",
     row.names = FALSE,
     append = FALSE
   )
-  data$tmpID <- seq.int(nrow(data))
-  HILID = data[data$TOT_EST_ONBOARD_WEIGHT_LBS > 0, c("tmpID", "VESSEL_NAME", "EST_LANDING_DATE_TIME","HAIL_IN_LANDING_ID")]
-  HILID$tmpEST_LANDING_DATE_TIME = gsub(':|-','',HILID$EST_LANDING_DATE_TIME)
-  HILID$tmpEST_LANDING_DATE_TIME = substr(gsub(' ','_',HILID$tmpEST_LANDING_DATE_TIME),7,13)
-  HILID = HILID[with(HILID, order(HILID$VESSEL_NAME,HILID$tmpEST_LANDING_DATE_TIME)),]
-  HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
-  HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
-  #vessels that show up more than once should be identified
-  if (max(HILID$tmpCNT)>1){
-    HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO <- paste0(HILID[HILID$tmpCNT > 1, ]$tmpVESS_INFO, "_", HILID[HILID$tmpCNT > 1, ]$tmpCNT)
-  }
-  HILID = HILID[with(HILID, order(HILID$tmpID)),]
-  HILID$tmpID <- NULL
-  HILID$tmpEST_LANDING_DATE_TIME <- NULL
-  HILID$tmpCNT <- NULL
+  xlsx::write.xlsx(
+    lpelagics,
+    file = file.path(thePath,filename),
+    sheetName = "LARGEPELAGICS",
+    row.names = FALSE,
+    append = TRUE
+  )
+  
   #write data to sheet
   cat("\nGetting details")
   for (x in 1:nrow(HILID)) {
-    thisSQLDET = gsub("&HILID&", HILID$HAIL_IN_LANDING_ID[x], SQLDET)
-    datadet = sqlQuery(channel[[2]], thisSQLDET)
+    datadet <- doRpt2(HILID = HILID$HAIL_IN_LANDING_ID[x])
     if (nrow(datadet)>0){
-    write.xlsx(
-      datadet,
-      file = file.path(thePath,filename),
-      sheetName = as.character(HILID$tmpVESS_INFO[x]),
-      row.names = FALSE,
-      append = TRUE
-    )
+      xlsx::write.xlsx(
+        datadet,
+        file = file.path(thePath,filename),
+        sheetName = as.character(HILID$tmpVESS_INFO[x]),
+        row.names = FALSE,
+        append = TRUE
+      )
     }
   }
-cat(paste0("\nFile written to ",file.path(thePath,filename),"\n\n"))
+  cat(paste0("\nFile written to ",file.path(thePath,filename),"\n\n"))
 }
