@@ -6,6 +6,7 @@
 #' @importFrom utils remove.packages
 #' @export
 updatePortsampling <- function(){
+  if ("Mar.portsampling" %in% .packages()) detach("package:Mar.portsampling", unload=TRUE) 
   if (require(Mar.portsampling)) remove.packages(pkgs = "Mar.portsampling")
   install_github('Maritimes/Mar.portsampling')
 }
