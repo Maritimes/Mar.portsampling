@@ -8,7 +8,8 @@ makeHailInRpt(
   thePath = file.path("C:", "DFO-MPO", "PORTSAMPLING"),
   fn.oracle.username = "_none_",
   fn.oracle.password = "_none_",
-  fn.oracle.dsn = "_none_"
+  fn.oracle.dsn = "_none_",
+  usepkg = "rodbc"
 )
 }
 \arguments{

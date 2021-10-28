@@ -27,14 +27,17 @@
 makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
                           fn.oracle.username = "_none_",
                           fn.oracle.password = "_none_",
-                          fn.oracle.dsn = "_none_") {
+                          fn.oracle.dsn = "_none_",
+                          usepkg = 'rodbc') {
   thePath =  path.expand(thePath)
   is.date <- function(x) inherits(x, 'POSIXct')
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
-  channel = Mar.utils::make_oracle_cxn(usepkg = 'rodbc', fn.oracle.username = fn.oracle.username, fn.oracle.password = fn.oracle.password, fn.oracle.dsn = fn.oracle.dsn)
-  if (channel$channel == -1) stop("Can't connect to Oracle")
+  channel = Mar.utils::make_oracle_cxn(usepkg = usepkg, fn.oracle.username = fn.oracle.username, fn.oracle.password = fn.oracle.password, fn.oracle.dsn = fn.oracle.dsn)
+  # class(oracle_cxn)[1] == "OraConnection" #ROracle
+  # class(oracle_cxn)[1] == "RODBC" #RODBC
+  if (!class(channel$channel) %in% c("OraConnection","RODBC")) stop("Can't connect to Oracle")
   res <- list()
   
   doRpt1 <- function(){
@@ -187,9 +190,9 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     MARFISSCI.GEARS.DESC_ENG,
     MARFISSCI.PFISP_HAIL_IN_LANDINGS.HAIL_IN_LANDING_ID
     ORDER BY MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME DESC,
-    MARFISSCI.PFISP_HAIL_IN_CALLS.VR_NUMBER;"
+    MARFISSCI.PFISP_HAIL_IN_CALLS.VR_NUMBER"
     
-    data = RODBC::sqlQuery(channel$channel, SQL1)
+    data = channel$thecmd(channel$channel, SQL1)
     if (nrow(data) == 0) stop("No data returned")
     cat("\nReceived data")
     data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0 
@@ -233,9 +236,9 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     WHEN 40
     THEN MARFISSCI.PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT * 2000
     ELSE MARFISSCI.PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
-    END) DESC;"
+    END) DESC"
     )
-    data = RODBC::sqlQuery(channel$channel, SQLDET)
+    data = channel$thecmd(channel$channel, SQLDET)
     return(data)
   }
   
@@ -288,8 +291,8 @@ WHERE
    257, --tuna,restricted
    259  --tuna, unspecified
     )
-    ORDER BY GREATEST(EST_OFFLOAD_DATE_TIME,EST_LANDING_DATE_TIME) DESC;"
-    data = RODBC::sqlQuery(channel$channel, SQLTuna)
+    ORDER BY GREATEST(EST_OFFLOAD_DATE_TIME,EST_LANDING_DATE_TIME) DESC"
+    data = channel$thecmd(channel$channel, SQLTuna)
     return(data)
   }
   
@@ -316,6 +319,9 @@ WHERE
   lpelagics <- doLargePelagics()
   HILID <- makeHILID(data=data)
   
+  #remove illegal stuff from the field that will become excel sheet names
+  HILID$tmpVESS_INFO <-gsub(pattern = "_+", "_", gsub("[[:punct:]]|[[:blank:]]", "_", HILID$tmpVESS_INFO, fixed = F))
+ 
   dir.create(thePath, showWarnings = FALSE)
   xlsx::write.xlsx(
     data,
@@ -331,7 +337,7 @@ WHERE
     row.names = FALSE,
     append = TRUE
   )
-  
+
   #write data to sheet
   cat("\nGetting details")
   for (x in 1:nrow(HILID)) {

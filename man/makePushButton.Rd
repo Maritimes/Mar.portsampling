@@ -4,7 +4,7 @@
 \alias{makePushButton}
 \title{makePushButton}
 \usage{
-makePushButton()
+makePushButton(arch = NULL)
 }
 \description{
 This function facilitates the generation of a batch file to your
