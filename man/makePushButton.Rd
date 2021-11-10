@@ -6,6 +6,10 @@
 \usage{
 makePushButton(arch = NULL)
 }
+\arguments{
+\item{arch}{default is \code{NULL}.  This is the r architecture you want to use - either 32 or 64 are 
+valid entries.  If left as NULL, it will use your default architecture}
+}
 \description{
 This function facilitates the generation of a batch file to your
 desktop that can be double-clicked to run reports easily
