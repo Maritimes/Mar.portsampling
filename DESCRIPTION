@@ -1,7 +1,7 @@
 Package: Mar.portsampling
 Type: Package
 Title: A suite of tools for Port Samplers
-Version: 2021.11.10
+Version: 2022.01.04
 Author: c( person("Mike", "McMahon", email="Mike.McMahon@dfo-mpo.gc.ca", role=c("aut", "cre")) )
 Maintainer: Mike McMahon <Mike.McMahon@dfo-mpo.gc.ca>
 Description: The loss of the Virtual Data Centre makes life difficult for some 
@@ -17,4 +17,4 @@ Remotes:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

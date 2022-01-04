@@ -318,8 +318,17 @@ WHERE
   }
   
   data <- doRpt1()
+  if(nrow(data)==0){
+    data[1,] <- NA
+  }
   lpelagics <- doLargePelagics()
+  if(nrow(lpelagics)==0){
+    lpelagics[1,] <- NA
+  }
   HILID <- makeHILID(data=data)
+  if(nrow(HILID)==0){
+    HILID[1,] <- NA
+  }
   
   #remove illegal stuff from the field that will become excel sheet names
   HILID$tmpVESS_INFO <-gsub(pattern = "_+", "_", gsub("[[:punct:]]|[[:blank:]]", "_", HILID$tmpVESS_INFO, fixed = F))
