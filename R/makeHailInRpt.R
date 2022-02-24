@@ -19,8 +19,14 @@
 #' environment (e.g. from an rprofile file), this can be left and that value will
 #' be used.  If a value for this is provided, it will take priority over your
 #' existing value.
+#' @param usepkg default is \code{'rodbc'}. This indicates whether the connection to Oracle should
+#' use \code{'rodbc'} or \code{'roracle'} to connect.  rodbc is slightly easier to setup, but
+#' roracle will extract data ~ 5x faster.
 #' @importFrom RODBC sqlQuery
-#' @importFrom xlsx write.xlsx
+#' @importFrom openxlsx createWorkbook
+#' @importFrom openxlsx addWorksheet
+#' @importFrom openxlsx writeData
+#' @importFrom openxlsx saveWorkbook
 #' @family Mar.portsampling
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @export
@@ -39,7 +45,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
   # class(oracle_cxn)[1] == "RODBC" #RODBC
   if (!class(channel$channel) %in% c("OraConnection","RODBC")) stop("Can't connect to Oracle")
   res <- list()
-  
+
   doRpt1 <- function(){
     SQL1 = 
       "SELECT MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME,
@@ -316,7 +322,7 @@ WHERE
     HILID$tmpCNT <- NULL
     return(HILID)
   }
-  
+
   data <- doRpt1()
   if(nrow(data)==0){
     data[1,] <- NA
@@ -333,35 +339,27 @@ WHERE
   #remove illegal stuff from the field that will become excel sheet names
   HILID$tmpVESS_INFO <-gsub(pattern = "_+", "_", gsub("[[:punct:]]|[[:blank:]]", "_", HILID$tmpVESS_INFO, fixed = F))
  
-  dir.create(thePath, showWarnings = FALSE)
-  xlsx::write.xlsx(
-    data,
-    file = file.path(thePath,filename),
-    sheetName = "MASTER",
-    row.names = FALSE,
-    append = FALSE
-  )
-  xlsx::write.xlsx(
-    lpelagics,
-    file = file.path(thePath,filename),
-    sheetName = "LARGEPELAGICS",
-    row.names = FALSE,
-    append = TRUE
-  )
+  # dir.create(thePath, showWarnings = FALSE)
+  wb <- openxlsx::createWorkbook()
+  if(!is.null(data)) {
+    openxlsx::addWorksheet(wb, "MASTER")
+    openxlsx::writeData(wb, sheet = "MASTER", data, rowNames = F)
+  }
+  if(!is.null(lpelagics)) {
+    openxlsx::addWorksheet(wb, "LARGEPELAGICS")
+    openxlsx::writeData(wb, sheet = "LARGEPELAGICS", lpelagics, rowNames = F)
+  }
 
   #write data to sheet
   cat("\nGetting details")
   for (x in 1:nrow(HILID)) {
     datadet <- doRpt2(HILID = HILID$HAIL_IN_LANDING_ID[x])
     if (nrow(datadet)>0){
-      xlsx::write.xlsx(
-        datadet,
-        file = file.path(thePath,filename),
-        sheetName = as.character(HILID$tmpVESS_INFO[x]),
-        row.names = FALSE,
-        append = TRUE
-      )
+
+      openxlsx::addWorksheet(wb, as.character(HILID$tmpVESS_INFO[x]))
+      openxlsx::writeData(wb, sheet = as.character(HILID$tmpVESS_INFO[x]), datadet, rowNames = F)
     }
   }
+  openxlsx::saveWorkbook(wb, file.path(thePath,filename), overwrite = T)
   cat(paste0("\nFile written to ",file.path(thePath,filename),"\n\n"))
 }

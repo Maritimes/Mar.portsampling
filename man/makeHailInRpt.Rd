@@ -33,6 +33,10 @@ identifier for accessing oracle objects. If you have a value for this stored in 
 environment (e.g. from an rprofile file), this can be left and that value will
 be used.  If a value for this is provided, it will take priority over your
 existing value.}
+
+\item{usepkg}{default is \code{'rodbc'}. This indicates whether the connection to Oracle should
+use \code{'rodbc'} or \code{'roracle'} to connect.  rodbc is slightly easier to setup, but
+roracle will extract data ~ 5x faster.}
 }
 \description{
 This function generates an excel file where the first sheet
