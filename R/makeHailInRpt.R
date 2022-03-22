@@ -310,7 +310,7 @@ WHERE
     HILID$tmpEST_LANDING_DATE_TIME = gsub(':|-','',HILID$EST_LANDING_DATE_TIME)
     HILID$tmpEST_LANDING_DATE_TIME = substr(gsub(' ','_',HILID$tmpEST_LANDING_DATE_TIME),7,13)
     HILID = HILID[with(HILID, order(HILID$VESSEL_NAME,HILID$tmpEST_LANDING_DATE_TIME)),]
-    HILID$tmpVESS_INFO = paste0(HILID$VESSEL_NAME,"_",HILID$tmpEST_LANDING_DATE_TIME)
+    HILID$tmpVESS_INFO = paste0(substr(HILID$VESSEL_NAME,1,23),"_",HILID$tmpEST_LANDING_DATE_TIME)
     HILID$tmpCNT = sequence(rle(as.character(HILID$tmpVESS_INFO))$lengths)
     #vessels that show up more than once should be identified
     if (max(HILID$tmpCNT)>1){
@@ -338,7 +338,6 @@ WHERE
   
   #remove illegal stuff from the field that will become excel sheet names
   HILID$tmpVESS_INFO <-gsub(pattern = "_+", "_", gsub("[[:punct:]]|[[:blank:]]", "_", HILID$tmpVESS_INFO, fixed = F))
- 
   # dir.create(thePath, showWarnings = FALSE)
   wb <- openxlsx::createWorkbook()
   if(!is.null(data)) {
@@ -355,7 +354,7 @@ WHERE
   for (x in 1:nrow(HILID)) {
     datadet <- doRpt2(HILID = HILID$HAIL_IN_LANDING_ID[x])
     if (nrow(datadet)>0){
-
+      
       openxlsx::addWorksheet(wb, as.character(HILID$tmpVESS_INFO[x]))
       openxlsx::writeData(wb, sheet = as.character(HILID$tmpVESS_INFO[x]), datadet, rowNames = F)
     }
