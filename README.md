@@ -7,7 +7,7 @@ To make the "pushButton" reports, run the following code.  This will generate a 
 
 ```R
 require(devtools)
-install_github('Maritimes/portsampling')
+install_github('Maritimes/Mar.portsampling')
 require(portsampling)
 makePushButton()
 ```
