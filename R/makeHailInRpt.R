@@ -34,16 +34,15 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
                           fn.oracle.username = "_none_",
                           fn.oracle.password = "_none_",
                           fn.oracle.dsn = "_none_",
-                          usepkg = 'rodbc') {
+                          usepkg = 'rodbc', lpDays=5) {
   thePath =  path.expand(thePath)
   is.date <- function(x) inherits(x, 'POSIXct')
   fn = "PortSamplers"
   ts = format(Sys.time(), "%Y%m%d_%H%M")
   filename <- paste0(fn, "_", ts, ".xlsx")
   channel = Mar.utils::make_oracle_cxn(usepkg = usepkg, fn.oracle.username = fn.oracle.username, fn.oracle.password = fn.oracle.password, fn.oracle.dsn = fn.oracle.dsn)
-  # class(oracle_cxn)[1] == "OraConnection" #ROracle
-  # class(oracle_cxn)[1] == "RODBC" #RODBC
-  if (!class(channel$channel) %in% c("OraConnection","RODBC")) stop("Can't connect to Oracle")
+  if (!inherits(channel, "OraConnection") & !inherits(channel, "RODBC")) stop("Can't connect to Oracle")
+  thecmd <- Mar.utils::connectionCheck(channel)
   res <- list()
 
   doRpt1 <- function(){
@@ -198,7 +197,7 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     ORDER BY MARFISSCI.PFISP_HAIL_IN_LANDINGS.EST_LANDING_DATE_TIME DESC,
     MARFISSCI.PFISP_HAIL_IN_CALLS.VR_NUMBER"
     
-    data = channel$thecmd(channel$channel, SQL1)
+    data = thecmd(channel, SQL1)
     if (nrow(data) == 0) stop("No data returned")
     cat("\nReceived data")
     data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0 
@@ -244,12 +243,12 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     ELSE MARFISSCI.PFISP_HAIL_IN_ONBOARD.EST_ONBOARD_WEIGHT
     END) DESC"
     )
-    data = channel$thecmd(channel$channel, SQLDET)
+    data = thecmd(channel, SQLDET)
     return(data)
   }
   
-  doLargePelagics <- function(){
-    SQLTuna = "SELECT DISTINCT
+  doLargePelagics <- function(lpDays=5){
+    SQLTuna = paste0("SELECT DISTINCT
     S.DESC_ENG SPECIES,
     A.EST_ONBOARD_WEIGHT,
     A.OFFLOAD_WEIGHT,
@@ -288,7 +287,7 @@ WHERE
     AND A.HAIL_IN_LANDING_ID = HILO.HAIL_IN_LANDING_ID(+)
     AND HILO.DOCKSIDE_OBSERVER_ID = DO.DOCKSIDE_OBSERVER_ID(+)
     AND HILO.TRIP_DMP_COMPANY_ID = DMP.DMP_COMPANY_ID(+)
-    AND (B.EST_LANDING_DATE_TIME >= sysdate-5 OR B.EST_OFFLOAD_DATE_TIME >= sysdate-5) 
+    AND (B.EST_LANDING_DATE_TIME >= sysdate-",lpDays," OR B.EST_OFFLOAD_DATE_TIME >= sysdate-",lpDays,") 
     AND SSF_SPECIES_CODE IN (
    251, --swordfish
    252, --albacore 
@@ -299,8 +298,8 @@ WHERE
    257, --tuna,restricted
    259  --tuna, unspecified
     )
-    ORDER BY GREATEST(EST_OFFLOAD_DATE_TIME,EST_LANDING_DATE_TIME) DESC"
-    data = channel$thecmd(channel$channel, SQLTuna)
+    ORDER BY GREATEST(EST_OFFLOAD_DATE_TIME,EST_LANDING_DATE_TIME) DESC")
+    data = thecmd(channel, SQLTuna)
     return(data)
   }
   
