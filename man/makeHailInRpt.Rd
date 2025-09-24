@@ -9,7 +9,8 @@ makeHailInRpt(
   fn.oracle.username = "_none_",
   fn.oracle.password = "_none_",
   fn.oracle.dsn = "_none_",
-  usepkg = "rodbc"
+  usepkg = "rodbc",
+  lpDays = 5
 )
 }
 \arguments{
