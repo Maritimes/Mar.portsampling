@@ -202,7 +202,8 @@ makeHailInRpt <- function(thePath = file.path("C:","DFO-MPO","PORTSAMPLING"),
     cat("\nReceived data")
     data[,!sapply(data, is.date)][is.na(data[,!sapply(data, is.date)])] <- 0 
     data[, sapply(data, is.date)][is.na(data[, sapply(data, is.date)])] <- as.Date('9999/01/01')
-    
+    data$EST_LANDING_DATE_TIME <- lubridate::with_tz(data$EST_LANDING_DATE_TIME, tzone = "America/Halifax")
+    data$EST_OFFLOAD_DATE_TIME <- lubridate::with_tz(data$EST_OFFLOAD_DATE_TIME, tzone = "America/Halifax")
     return(data)
   }
   
@@ -300,6 +301,9 @@ WHERE
     )
     ORDER BY GREATEST(EST_OFFLOAD_DATE_TIME,EST_LANDING_DATE_TIME) DESC")
     data = thecmd(channel, SQLTuna)
+    
+    data$EST_LANDING_DATE_TIME <- lubridate::with_tz(data$EST_LANDING_DATE_TIME, tzone = "America/Halifax")
+    data$EST_OFFLOAD_DATE_TIME <- lubridate::with_tz(data$EST_OFFLOAD_DATE_TIME, tzone = "America/Halifax")
     return(data)
   }
   
